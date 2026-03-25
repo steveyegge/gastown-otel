@@ -1,0 +1,24 @@
+# Gas Town — OpenTelemetry stack managed by process-compose
+#
+# Usage:
+#   process-compose up          # start all services (foreground)
+#   process-compose up -d       # start all services (detached)
+#   process-compose down        # stop all services
+
+version: "0.5"
+
+processes:
+  otel-stack:
+    command: docker compose up --force-recreate --remove-orphans
+    readiness_probe:
+      exec:
+        command: "docker ps --filter name=gt-victoriametrics --filter name=gt-victorialogs --filter name=gt-grafana --filter status=running --format '{{.Names}}' | wc -l | grep -q 3"
+      initial_delay_seconds: 5
+      period_seconds: 5
+      failure_threshold: 12
+    shutdown:
+      command: docker compose down
+      signal: SIGTERM
+      timeout_seconds: 30
+    availability:
+      restart: "no"
